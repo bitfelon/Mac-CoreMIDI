@@ -293,21 +293,21 @@ MIDIClientCreateDestination(client, name, callback)
 MODULE = Mac::CoreMIDI   PACKAGE = Mac::CoreMIDI::Port  PREFIX=MIDIPort
 
 OSStatus
-MIDIPort_out(mp, msg, val1, val2)
+MIDIPort_out(mp, dest, msg, val1, val2)
 				Mac_CoreMIDI_Port mp;
 				//Mac_CoreMIDI_Endpoint ep;
 				int msg;
 				int val1;
 				int val2;
+				int dest;
 		PREINIT:
 				MIDITimeStamp timestamp;
 				Byte buffer[1024];
 				MIDIPacketList *packetlist;
 				MIDIPacket *currentpacket;
-				//Byte noteon[3];
-				//ItemCount nDests;
-				//ItemCount iDest;
-				MIDIEndpointRef dest;
+				ItemCount nDests;
+				ItemCount iDest;
+				MIDIEndpointRef destout;
     CODE:
 				// 0 = play now
 				timestamp = 0;
@@ -317,8 +317,15 @@ MIDIPort_out(mp, msg, val1, val2)
 				currentpacket = MIDIPacketListAdd(packetlist, sizeof(buffer), currentpacket, timestamp, 3, noteon);
 
 				// XXX specify dest
-      	dest = MIDIGetDestination(0);
-				RETVAL = MIDISend(mp, dest, packetlist);
+				// THIS IS BROKEN!!! XXX
+				//if (dest)
+				//	RETVAL = MIDISend(mp, dest, packetlist);
+				//else
+						nDests = MIDIGetNumberOfDestinations();
+						for (iDest=0; iDest<nDests; iDest++) {
+							destout = MIDIGetDestination(iDest);
+							RETVAL = MIDISend(mp, destout, packetlist);
+						}
 
 		OUTPUT:
 				RETVAL

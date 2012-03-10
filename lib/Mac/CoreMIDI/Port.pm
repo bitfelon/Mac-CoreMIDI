@@ -10,30 +10,53 @@ our $VERSION = '0.05';
 sub ctlout {
 	my $class = shift;
 
-	my ($note, $velocity) = @_;
-	if ($note > 127 || $velocity > 127 || $note < 0 || $velocity < 0 || $note !~ /^\d+$/ || $velocity !~ /^\d+$/)
+	my @dest;
+	if (ref($_[0]) eq "Mac::CoreMIDI::Endpoint")
+	{
+		@dest = shift(@_);
+	}
+
+	my ($note, $velocity, $channel) = @_;
+	$channel ||= 0;
+	if ($note > 127 || $velocity > 127 || $note < 0 || $velocity < 0 || $note !~ /^\d+$/ || $velocity !~ /^\d+$/ || $channel =~ /\D/)
 	{
 		die "must send cc value/velocity to ctlout()\n";
 	}
 
-	return $class->out(0xB0, $note, $velocity);
+	return $class->out(@dest, 0xB0 + $channel, $note, $velocity);
 }
 
 sub noteout {
 	my $class = shift;
 
-	my ($note, $velocity) = @_;
-	if ($note > 127 || $velocity > 127 || $note < 0 || $velocity < 0 || $note !~ /^\d+$/ || $velocity !~ /^\d+$/)
+	my @dest;
+	if (ref($_[0]) eq "Mac::CoreMIDI::Endpoint")
+	{
+		@dest = shift(@_);
+	}
+
+	my ($note, $velocity, $channel) = @_;
+	$channel ||= 0;
+	if ($note > 127 || $velocity > 127 || $note < 0 || $velocity < 0 || $note !~ /^\d+$/ || $velocity !~ /^\d+$/ || $channel =~ /\D/)
 	{
 		die "must send note/velocity to noteout()\n";
 	}
 
-	return $class->out($velocity ? 0x90 : 0x80, $note, $velocity);
+	my $msg = $channel + ($velocity ? 0x90 : 0x80);
+	return $class->out(@dest, $msg, $note, $velocity);
 }
 
+# _out($class, [$endpoint,] $msg, $val1, $val2)
 sub out {
 		my $class = shift;
-		return _out($class, @_);
+		my @out = @_;
+
+		if (ref($out[0]) ne "Mac::CoreMIDI::Endpoint")
+		{
+			@out = (0, @out);
+		}
+
+		return _out($class, @out);
 }
 
 sub new_input {
